@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>聊天室</title>
+    <script src="/static/script.js"></script>
+    <style>
+        /* Add some basic styling */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #chat-window {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: scroll;
+            border-bottom: 1px solid #ccc;
+        }
+
+        #input-area {
+            padding: 10px;
+        }
+
+        #message-input {
+            width: calc(100% - 80px);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #send-button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chat-container">
+        <div id="chat-window"></div>
+        <div id="input-area">
+            <input type="text" id="message-input" placeholder="输入消息...">
+            <button id="send-button">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        // Function to add a new message to the chat window
+        function addMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.innerText = message;
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Event listener for send button click
+        sendButton.addEventListener('click', () => {
+            const message = messageInput.value;
+            if (message.trim() !== '') {
+                sendMessage(message);
+                messageInput.value = '';
+            }
+        });
+
+        // Function to send a message to the server
+        function sendMessage(message) {
+            fetch('/api/message/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: message })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to send message');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data.message); // Log success message from server
+                    addMessage('You: ' + message); // Add message to chat window
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        }
+
+        // Function to get messages from the server
+        function getMessages() {
+            fetch('/api/message/get')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to get messages');
+                    }
+                    return response.json();
+                })
+                .then(messages => {
+                    chatWindow.innerHTML = ''; // Clear previous messages
+                    messages.forEach(message => {
+                        addMessage(message.content); // Add each message to chat window
+                    });
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        }
+
+        // Get messages on page load and every 2 seconds
+        getMessages();
+        setInterval(getMessages, 2000);
+    </script>
+</body>
+
+</html>
